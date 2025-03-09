@@ -98,6 +98,7 @@ extern uint64 sys_link(void);
 extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 extern uint64 sys_sysinfo(void);
+extern uint64 sys_trace(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -124,6 +125,57 @@ static uint64 (*syscalls[])(void) = {
     [SYS_mkdir] sys_mkdir,
     [SYS_close] sys_close,
     [SYS_sysinfo] sys_sysinfo,
+    [SYS_trace] sys_trace,
+};
+
+static char *syscall_names[] = {
+  [SYS_fork] "fork",
+  [SYS_exit] "exit",
+  [SYS_wait] "wait",
+  [SYS_pipe] "pipe",
+  [SYS_read] "read",
+  [SYS_kill] "kill",
+  [SYS_exec] "exec",
+  [SYS_fstat] "fstat",
+  [SYS_chdir] "chdir",
+  [SYS_dup] "dup",
+  [SYS_getpid] "getpid",
+  [SYS_sbrk] "sbrk",
+  [SYS_sleep] "sleep",
+  [SYS_uptime] "uptime",
+  [SYS_open] "open",
+  [SYS_write] "write",
+  [SYS_mknod] "mknod",
+  [SYS_unlink] "unlink",
+  [SYS_link] "link",
+  [SYS_mkdir] "mkdir",
+  [SYS_close] "close",
+  [SYS_trace] "trace"
+};
+
+static int syscall_nargs[] = {
+  [SYS_fork]  = 0,
+  [SYS_exit]  = 1,
+  [SYS_wait]  = 1,
+  [SYS_pipe]  = 1,
+  [SYS_read]  = 3,
+  [SYS_kill]  = 2,
+  [SYS_exec]  = 2,
+  [SYS_fstat] = 2,
+  [SYS_chdir] = 1,
+  [SYS_dup]   = 1,
+  [SYS_getpid]= 0,
+  [SYS_sbrk]  = 1,
+  [SYS_sleep] = 1,
+  [SYS_uptime]= 0,
+  [SYS_open]  = 2,
+  [SYS_write] = 3,
+  [SYS_mknod] = 3,
+  [SYS_unlink]= 1,
+  [SYS_link]  = 2,
+  [SYS_mkdir] = 1,
+  [SYS_close] = 1,
+  [SYS_trace] = 1
 };
 
 void syscall(void)
@@ -134,16 +186,31 @@ void syscall(void)
   num = p->trapframe->a7;
   //num = * (int *) 0;
 
-  if (num > 0 && num < NELEM(syscalls) && syscalls[num])
-  {
-    // Use num to lookup the system call function for num, call it,
-    // and store its return value in p->trapframe->a0
-    p->trapframe->a0 = syscalls[num]();
+  if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+      int args[3]; // Chỉ hỗ trợ tối đa 3 tham số
+      int nargs = syscall_nargs[num]; // Lấy số lượng tham số từ bảng
+      int retval;
+  
+      // Lấy tham số từ thanh ghi a0, a1, a2
+      if (nargs > 0) argint(0, &args[0]);
+      if (nargs > 1) argint(1, &args[1]);
+      if (nargs > 2) argint(2, &args[2]);
+  
+      retval = syscalls[num]();  // Gọi syscall
+      p->trapframe->a0 = retval; // Lưu giá trị trả về vào thanh ghi a0
+  
+      // Nếu syscall này được theo dõi
+      if (p->trace_mask & (1 << num)) {
+          printf("%d: syscall %s(", p->pid, syscall_names[num]);
+  
+          // In danh sách tham số
+          for (int i = 0; i < nargs; i++) {
+              if (i > 0) printf(", ");
+              printf("%d", args[i]);
+          }
+  
+          printf(") -> %d\n", retval); // In giá trị trả về
+      }
   }
-  else
-  {
-    printf("%d %s: unknown sys call %d\n",
-           p->pid, p->name, num);
-    p->trapframe->a0 = -1;
-  }
+  
 }

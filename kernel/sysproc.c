@@ -6,10 +6,21 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "sysinfo.h"
+#include "syscall.h"
 
 extern uint64 get_freemem(void); // return number of freemem byte
 extern uint64 get_nproc(void);
 extern uint64 get_loadavg(void);
+
+uint64
+sys_trace(void){
+  int mask;
+  struct proc *p = myproc();
+  
+  argint(0, &mask);
+  p->trace_mask = mask;
+  return 0;
+}
 
 uint64
 sys_exit(void)
