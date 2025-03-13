@@ -12,15 +12,6 @@ extern uint64 get_freemem(void); // return number of freemem byte
 extern uint64 get_nproc(void);
 extern uint64 get_loadavg(void);
 
-uint64
-sys_trace(void){
-  int mask;
-  struct proc *p = myproc();
-  
-  argint(0, &mask);
-  p->trace_mask = mask;
-  return 0;
-}
 
 uint64
 sys_exit(void)
@@ -110,10 +101,23 @@ sys_uptime(void)
   return xticks;
 }
 
+uint64
+sys_trace(void){
+  int mask;
+  
+  argint(0, &mask);
+  if (mask < 0)
+    return -1;
+    
+  myproc()->trace_mask = mask;
+  return 0;
+}
+
 uint64 sys_sysinfo(void)
 {
   uint64 addr;
   struct sysinfo info;
+  struct proc* p = myproc();
   // get address of struct sysinfo from userspace
   argaddr(0, &addr);
 
@@ -124,7 +128,7 @@ uint64 sys_sysinfo(void)
 
   printf("Load average: %d\n", info.load_avg);
   // copy result to user space
-  if (copyout(myproc()->pagetable, addr, (char *)&info, sizeof(info)) < 0)
+  if (copyout(p->pagetable, addr, (char *)&info, sizeof(info)) < 0)
     return -1;
   return 0;
 }

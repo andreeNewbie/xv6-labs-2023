@@ -33,7 +33,8 @@ struct spinlock wait_lock;
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
 // guard page.
-void proc_mapstacks(pagetable_t kpgtbl)
+void 
+proc_mapstacks(pagetable_t kpgtbl)
 {
   struct proc *p;
 
@@ -321,6 +322,8 @@ int fork(void)
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
+  np->trace_mask = p->trace_mask;
+
   pid = np->pid;
 
   release(&np->lock);
@@ -333,8 +336,6 @@ int fork(void)
   np->state = RUNNABLE;
   release(&np->lock);
 
-  np->trace_mask = p->trace_mask;
-  
   return pid;
 }
 
