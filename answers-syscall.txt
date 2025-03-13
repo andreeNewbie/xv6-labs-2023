@@ -1,0 +1,137 @@
+Câu 1: Hàm nào đã gọi syscall()?
+Dựa vào kết quả của lệnh backtrace, stack trace hiển thị như sau:
+
+#0  syscall () at kernel/syscall.c:184
+#1  0x0000000080002a50 in usertrap () at kernel/trap.c:67
+
+usertrap() trong kernel/trap.c đã gọi syscall(). usertrap() là hàm xử lý trap từ User mode, bao gồm system call, page fault hoặc ngắt. Khi usertrap() phát hiện một system call (được kích hoạt bởi lệnh ecall từ User mode), nó sẽ gọi syscall() để xử lý lời gọi hệ thống đó.
+
+
+Câu 2: Giá trị của p->trapframe->a7 là gì và nó đại diện cho điều gì?
+Lệnh p /x p->trapframe->a7 trong GDB trả về:
+
+$2 = 0x7
+
+Theo định nghĩa trong syscall.h, giá trị 7 tương ứng với system call exec():
+
+#define SYS_exec    7
+
+Điều này có nghĩa là tiến trình user hiện tại đang gọi exec()
+
+Câu 3: Chế độ trước đó của CPU là gì?
+Giá trị của thanh ghi sstatus được in ra như sau:
+
+$3 = 0x200000022
+
+Trong kiến trúc RISC-V, sstatus (Supervisor Status Register) là thanh ghi chứa trạng thái đặc quyền của CPU, bao gồm thông tin về chế độ trước đó của CPU, quyền truy cập bộ nhớ, ngắt (interrupt), v.v.
+
+Xác định bit SPP trong sstatus
+Trong kiến trúc RISC-V, bit SPP (Supervisor Previous Privilege) nằm ở bit 8 của sstatus:
+
+SPP = 0 → CPU trước đó ở User mode (U-mode).
+SPP = 1 → CPU trước đó ở Supervisor mode (S-mode).
+Để xác định SPP, ta cần chuyển đổi giá trị sstatus sang dạng nhị phân.
+
+0x200000022 = 0b0010 0000 0000 0000 0000 0000 0000 0010 0010
+
+Nhìn vào vị trí bit 8 (tính từ bit thấp nhất, bit 0):
+...0000000000000000000000000000000010 0010
+                           ↑
+                           bit 8 = 0
+
+Bit 8 (SPP) = 0, điều này có nghĩa là CPU trước đó đang chạy ở User mode.
+
+Câu 4: Xác định lệnh gây lỗi và thanh ghi chứa biến num?
+
+xv6 kernel is booting
+
+hart 1 starting
+hart 2 starting
+scause 0x000000000000000d
+sepc=0x00000000800030ca stval=0x0000000000000000
+panic: kerneltrap
+
+Kiểm tra lệnh bằng địa chỉ gây lỗi :
+
+grep 800030ca kernel/kernel.asm
+
+kết quả:
+
+800030ca:   439c                    lw      a5,0(a5)
+
+Lệnh lw a5, 0(a5) đang cố đọc giá trị từ địa chỉ a5 + 0.
+Nếu a5 = 0x0 (NULL), lỗi xảy ra do NULL pointer dereference.
+
+Vậy, a5 chắc chắn đã được sử dụng để chứa giá trị của num.
+
+
+Câu 5.1: Tại sao kernel bị crash?
+
+(gdb) b *0x800030ca
+Breakpoint 1 at 0x800030ca: file kernel/syscall.c, line 187.
+(gdb) c
+Continuing.
+[Switching to Thread 1.2]
+
+Thread 2 hit Breakpoint 1, syscall () at kernel/syscall.c:187
+187       num = * (int *) 0;
+
+Chạy trong GDB:
+
+(gdb) layout asm
+
+Kết quả:
+
+0x800030ca <syscall+22> lw a5, 0(a5)
+
+=> Lỗi trong GDB và kernel.asm là giống nhau
+
+
+chạy trong GDB:
+
+p/x $a5
+
+Kết quả:
+
+$2 = 0x0
+
+=> Kernel đã cố truy xuất địa chỉ NULL (0x0), gây lỗi.
+
+Câu 5.2: Địa chỉ 0 có được ánh xạ trong không gian địa chỉ của kernel không?
+
+Trong xv6, địa chỉ 0 không được ánh xạ trong không gian địa chỉ của kernel để:
+- Ngăn lỗi truy cập con trỏ NULL (giúp phát hiện bug).
+- Bảo vệ bộ nhớ (tránh chương trình ghi nhầm vào vùng quan trọng).
+- Không có mapping trong page table (kiểm tra trong setupkvm và kvmmap).
+
+Câu 5.3: Xác nhận lỗi bằng scause
+
+(gdb) p/x $scause
+$3 = 0x8
+
+Giá trị scause = 0x8 nghĩa là "Environment Call from U-mode" (ECALL từ User Mode).
+=> Điều này xác nhận rằng lỗi xảy ra do một system call từ User Mode
+
+(gdb) p/x p->trapframe->a7
+$7 = 0x7
+
+=> Số hiệu system call là 0x7, nghĩa là exec().
+
+Kiểm tra xem kernel có truy cập địa chỉ NULL không bằng cách kiểm tra stval:
+
+(gdb) p/x $stval
+$9 = 0x0
+
+=> stval = 0x0 → Kernel đã cố truy cập địa chỉ 0x0 (NULL pointer).
+
+Câu 6: Tên tiến trình gây lỗi kernel panic và id của nó?
+
+(gdb) p p->name
+$10 = "initcode\000\000\000\000\000\000\000\000"
+(gdb) p p->pid
+$11 = 1
+
+p->name = "initcode" → Tiến trình đang chạy có tên là initcode.
+p->pid = 1 → Đây là tiến trình đầu tiên của hệ thống (PID = 1), nghĩa là tiến trình init đang khởi chạy.
+
+
