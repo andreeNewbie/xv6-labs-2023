@@ -712,7 +712,8 @@ void procdump(void)
   }
 }
 
-uint64 get_nproc(void)
+uint64 
+get_nproc(void)
 {
   struct proc *p;
   uint64 count = 0;
