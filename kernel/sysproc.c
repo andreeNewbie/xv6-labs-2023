@@ -12,7 +12,7 @@ sys_exit(void)
   int n;
   argint(0, &n);
   exit(n);
-  return 0;  // not reached
+  return 0; // not reached
 }
 
 uint64
@@ -43,7 +43,7 @@ sys_sbrk(void)
 
   argint(0, &n);
   addr = myproc()->sz;
-  if(growproc(n) < 0)
+  if (growproc(n) < 0)
     return -1;
   return addr;
 }
@@ -54,12 +54,13 @@ sys_sleep(void)
   int n;
   uint ticks0;
 
-
   argint(0, &n);
   acquire(&tickslock);
   ticks0 = ticks;
-  while(ticks - ticks0 < n){
-    if(killed(myproc())){
+  while (ticks - ticks0 < n)
+  {
+    if (killed(myproc()))
+    {
       release(&tickslock);
       return -1;
     }
@@ -69,12 +70,46 @@ sys_sleep(void)
   return 0;
 }
 
-
 #ifdef LAB_PGTBL
-int
-sys_pgaccess(void)
+int sys_pgaccess(void)
 {
   // lab pgtbl: your code here.
+  uint64 va;        // virtual addr starts
+  int n;            // number of pages need to check
+  uint64 user_addr; // userspace's address for storing result
+
+  // Lấy tham số từ userspace
+  argaddr(0, &va);
+  argint(1, &n);
+  argaddr(2, &user_addr);
+
+  // Kiểm tra giới hạn n để tránh overflow
+  if (n <= 0 || n > 32)
+    return -1;
+
+  struct proc *p = myproc();
+  pagetable_t pagetable = p->pagetable;
+  uint bitmask = 0;
+
+  for (int i = 0; i < n; i++)
+  {
+    uint64 curr_va = va + i * PGSIZE;
+    pte_t *pte = walk(pagetable, curr_va, 0);
+
+    if (pte == 0 || !(*pte & PTE_V) || !(*pte & PTE_U))
+      continue; // Bỏ qua trang không hợp lệ hoặc không phải userspace
+
+    if (*pte & PTE_A)
+    {
+      bitmask |= (1 << i); // Thiết lập bit tương ứng nếu trang đã được truy cập
+      *pte &= ~PTE_A;      // Xóa bit truy cập
+    }
+  }
+
+  // Sao chép bitmask vào địa chỉ userspace
+  if (copyout(pagetable, user_addr, (char *)&bitmask, sizeof(bitmask)) < 0)
+    return -1;
+
   return 0;
 }
 #endif
