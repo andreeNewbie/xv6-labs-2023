@@ -78,12 +78,12 @@ int sys_pgaccess(void)
   int n;            // number of pages need to check
   uint64 user_addr; // userspace's address for storing result
 
-  // Lấy tham số từ userspace
+  // get parameter from userspace
   argaddr(0, &va);
   argint(1, &n);
   argaddr(2, &user_addr);
 
-  // Kiểm tra giới hạn n để tránh overflow
+  // Check n bounds to avoid overflow
   if (n <= 0 || n > 32)
     return -1;
 
@@ -97,16 +97,15 @@ int sys_pgaccess(void)
     pte_t *pte = walk(pagetable, curr_va, 0);
 
     if (pte == 0 || !(*pte & PTE_V) || !(*pte & PTE_U))
-      continue; // Bỏ qua trang không hợp lệ hoặc không phải userspace
-
+      continue; // Skip invalid or non-userspace pages
     if (*pte & PTE_A)
     {
-      bitmask |= (1 << i); // Thiết lập bit tương ứng nếu trang đã được truy cập
-      *pte &= ~PTE_A;      // Xóa bit truy cập
+      bitmask |= (1 << i); // Set the corresponding bit if the page has been visited
+      *pte &= ~PTE_A;      // Clear access bit
     }
   }
 
-  // Sao chép bitmask vào địa chỉ userspace
+  // Copy bitmask to userspace address
   if (copyout(pagetable, user_addr, (char *)&bitmask, sizeof(bitmask)) < 0)
     return -1;
 

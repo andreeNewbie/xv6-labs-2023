@@ -143,7 +143,7 @@ found:
     return 0;
   }
 
-  // Khởi tạo struct usyscall
+  // initialize struct usyscall
   p->usyscall->pid = p->pid;
 
   // An empty user page table.
