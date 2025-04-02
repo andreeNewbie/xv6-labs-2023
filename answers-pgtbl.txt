@@ -1,1 +1,15 @@
-Trả lời câu hỏi vào đây
+Question: Which other xv6 system call(s) could be made faster using this shared page? Explain how.
+
+Answer:
+Other xv6 System Calls That Can Be Optimized Using a Shared Page Like getpid()
+    1.	getppid() - Get the parent process ID: Similar to getpid(), the PPID information can be stored in the struct usyscall and updated when a process is created or when the parent-child relationship changes.
+    2.	uptime() - Get system uptime: The kernel can update the ticks value on the shared page, allowing userspace to read it directly without transitioning to the kernel.
+    3.	getuid(), geteuid(), getgid(), getegid() - System calls related to user and group IDs: If xv6 is extended to support user and group concepts, these IDs can be stored in the shared page.
+    4.	gettimeofday() - Get the current time: The kernel can periodically update the current time on the shared page.
+    Implementation Approach
+    •	Extend the struct usyscall to include additional fields (PPID, ticks, UIDs, GIDs, etc.).
+    •	Update these values when changes occur (e.g., update PPID when the parent process changes).
+    •	Assign read permissions for userspace (PTE_R) on the shared page.
+    •	Implement wrapper functions in userspace similar to ugetpid() to read information from the shared page.
+Main Benefits
+    The key advantage is reducing the context-switching overhead from user mode to kernel mode, especially for frequently called system calls that return simple, infrequently changing information.
