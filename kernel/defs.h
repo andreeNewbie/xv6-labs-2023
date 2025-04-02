@@ -189,3 +189,4 @@ void virtio_disk_intr(void);
 #define NELEM(x) (sizeof(x) / sizeof((x)[0]))
 
 pte_t *walk(pagetable_t, uint64, int); // Make sure walk is declared for use in sys_pgaccess
+uint64 sys_pgaccess(void);

@@ -71,7 +71,8 @@ sys_sleep(void)
 }
 
 #ifdef LAB_PGTBL
-int sys_pgaccess(void)
+uint64
+sys_pgaccess(void)
 {
   // lab pgtbl: your code here.
   uint64 va;        // virtual addr starts
