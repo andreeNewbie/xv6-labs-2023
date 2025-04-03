@@ -13,3 +13,102 @@ Other xv6 System Calls That Can Be Optimized Using a Shared Page Like getpid()
     •	Implement wrapper functions in userspace similar to ugetpid() to read information from the shared page.
 Main Benefits
     The key advantage is reducing the context-switching overhead from user mode to kernel mode, especially for frequently called system calls that return simple, infrequently changing information.
+
+
+Question: For every leaf page in the vmprint output, explain what it logically contains and what its permission bits are.
+
+Answer:
+Analysis of Each Leaf Page
+
+Note: PTE & (1 << N): Check whether bit N is set (1) or not.
+
+1. Leaf page at .. .. ..0
+    PTE: 0x0000000021fda01b
+    PA: 0x0000000087f68000
+    Bit analysis:
+        PTE_V (Valid): bit 0 = 1. The entry is valid and can be used to map virtual addresses to physical addresses.
+        PTE_U (User): bit 4 = 1. The page can be accessed from user mode.
+        PTE_R (Read): bit 1 = 1. The page has read permission.
+        PTE_W (Write): bit 2 = 0. The page does not have write permission.
+        PTE_X (Execute): bit 3 = 1. The page has execute permission.
+    Meaning:
+        This is a code page, with read and execute permissions only.
+        The page is valid and can be accessed from user mode.
+
+2. Leaf page at .. .. ..1
+    PTE: 0x0000000021fd9417
+    PA: 0x0000000087f65000
+    Bit analysis:
+        PTE_V (Valid): bit 0 = 1. The entry is valid and can be used to map virtual addresses to physical addresses.
+        PTE_U (User): bit 4 = 1. The page can be accessed from user mode.
+        PTE_R (Read): bit 1 = 1. The page has read permission.
+        PTE_W (Write): bit 2 = 1. The page has write permission.
+        PTE_X (Execute): bit 3 = 0. The page does not have execute permission.
+    Meaning:
+        This is a data page, with read and write permissions.
+        The page is valid and can be accessed from user mode.
+
+3. Leaf page at .. .. ..2
+    PTE: 0x0000000021fd9007
+    PA: 0x0000000087f64000
+    Bit analysis:
+        PTE_V (Valid): bit 0 = 1. The entry is valid and can be used to map virtual addresses to physical addresses.
+        PTE_U (User): bit 4 = 1. The page can be accessed from user mode.
+        PTE_R (Read): bit 1 = 1. The page has read permission.
+        PTE_W (Write): bit 2 = 1. The page has write permission.
+        PTE_X (Execute): bit 3 = 0. The page does not have execute permission.
+    Meaning:
+        This is a data page, with read and write permissions.
+        The page is valid and can be accessed from user mode.
+
+4. Leaf page at .. .. ..3
+    PTE: 0x0000000021fd8c17
+    PA: 0x0000000087f63000
+    Bit analysis:
+        PTE_V (Valid): bit 0 = 1. The entry is valid and can be used to map virtual addresses to physical addresses.
+        PTE_U (User): bit 4 = 1. The page can be accessed from user mode.
+        PTE_R (Read): bit 1 = 1. The page has read permission.
+        PTE_W (Write): bit 2 = 1. The page has write permission.
+        PTE_X (Execute): bit 3 = 0. The page does not have execute permission.
+    Meaning:
+        This is a data page, with read and write permissions.
+        The page is valid and can be accessed from user mode.
+
+5. Leaf page at .. .. ..509
+    PTE: 0x0000000021fdcc13
+    PA: 0x0000000087f73000
+    Bit analysis:
+        PTE_V (Valid): bit 0 = 1. The entry is valid and can be used to map virtual addresses to physical addresses.
+        PTE_U (User): bit 4 = 1. The page can be accessed from user mode.
+        PTE_R (Read): bit 1 = 1. The page has read permission.
+        PTE_W (Write): bit 2 = 0. The page does not have write permission.
+        PTE_X (Execute): bit 3 = 1. The page has execute permission.
+    Meaning:
+        This is a code page, with read and execute permissions only.
+        The page is valid and can be accessed from user mode.
+
+6. Leaf page at .. .. ..510
+    PTE: 0x0000000021fdd007
+    PA: 0x0000000087f74000
+    Bit analysis:
+        PTE_V (Valid): bit 0 = 1. The entry is valid and can be used to map virtual addresses to physical addresses.
+        PTE_U (User): bit 4 = 1. The page can be accessed from user mode.
+        PTE_R (Read): bit 1 = 1. The page has read permission.
+        PTE_W (Write): bit 2 = 1. The page has write permission.
+        PTE_X (Execute): bit 3 = 0. The page does not have execute permission.
+    Meaning:
+        This is a data page, with read and write permissions.
+        The page is valid and can be accessed from user mode.
+
+7. Leaf page at .. .. ..511
+    PTE: 0x0000000020001c0b
+    PA: 0x0000000080007000
+    Bit analysis:
+        PTE_V (Valid): bit 0 = 1. The entry is valid and can be used to map virtual addresses to physical addresses.
+        PTE_U (User): bit 4 = 1. The page can be accessed from user mode.
+        PTE_R (Read): bit 1 = 1. The page has read permission.
+        PTE_W (Write): bit 2 = 0. The page does not have write permission.
+        PTE_X (Execute): bit 3 = 1. The page has execute permission.
+    Meaning:
+        This is a code page, with read and execute permissions only.
+        The page is valid and can be accessed from user mode.
