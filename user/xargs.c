@@ -1,80 +1,61 @@
-/*** xargs ***/
-
 #include "kernel/types.h"
 #include "user/user.h"
 #include "kernel/param.h"
 
-int main(int argc, char *argv[])
-{
-	int x_argc;
-	char *x_argv[MAXARG];
-	char buf[512];
-	char *arg_s, *arg_e;	//pointer that point to arg_start and arg_end in buf
+#define MAXARG 32  // Maximum number of arguments
+#define MAXLEN 512 // Maximum length of an input line
 
-	x_argc = argc-1;
-	for (int i=1; i<argc; i++)
-		x_argv[i-1]=argv[i];
-	arg_s = arg_e = buf;
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(2, "Usage: xargs command [arg...]\n");
+        exit(1);
+    }
 
-	while (read(0, arg_e, sizeof(char))) {
-		if (*arg_e == '\n') {
-			//put in arg
-			if (x_argc == MAXARG-1) {	//if full
-				fprintf(2, "xargs: too many arguments\n");
-				arg_s = arg_e = buf;
-				*arg_e = '\0';
-				while (*arg_e != '\n') read(0, arg_e, sizeof(char));
-			} else {			// not full
-				*arg_e = '\0';
-				x_argv[x_argc++] = arg_s;
-				arg_e++;
-				arg_s = arg_e;
-			}
+    char *new_argv[MAXARG];
+    int new_argc = 0;
 
-			//fork and exec
-			if (fork() == 0) {
-				exec(x_argv[0], x_argv);
-			}
+    // Check for -n argument
+    if (argc > 2 && strcmp(argv[1], "-n") == 0) {
+        for (int i = 3; i < argc; i++) {
+            new_argv[new_argc++] = argv[i];
+        }
+    } else {
+        for (int i = 1; i < argc; i++) {
+            new_argv[new_argc++] = argv[i];
+        }
+    }
 
-			//empty buffer and recover x_argc = argc-1
-			arg_s = arg_e = buf;
-			x_argc = argc-1;
+    char buf[MAXLEN];
+    int len = 0;
 
-		} else if (*arg_e == ' ') {
-			if (x_argc == MAXARG-1) {	//if full
-				fprintf(2, "xargs: too many arguments\n");
-				arg_s = arg_e = buf;
-				*arg_e = '\0';
-				while (*arg_e != '\n') read(0, arg_e, sizeof(char));
-			} else {			// not full
-				*arg_e = '\0';
-				x_argv[x_argc++] = arg_s;
-				arg_e++;
-				arg_s = arg_e;
-			}
-		} else {
-			arg_e++;
-		}
-	}
+    while (read(0, buf + len, 1) == 1) {
+        if (buf[len] == '\n') { // When encountering a newline, execute the command
+            buf[len] = 0; // Null-terminate the string
+            new_argv[new_argc] = buf; // Add the line to the last argument
+            new_argv[new_argc + 1] = 0; // Null-terminated argument list
 
-	if (buf != arg_e) {	//while finished, but not empty
-		if (x_argc == MAXARG-1) {	//if full
-			fprintf(2, "xargs: too many arguments\n");
-			arg_s = arg_e = buf;
-			*arg_e = '\0';
-			while (*arg_e != '\n') read(0, arg_e, sizeof(char));
-		} else {			// not full
-			*arg_e = '\0';
-			x_argv[x_argc++] = arg_s;
-			arg_e++;
-			arg_s = arg_e;
-		}
-		
-		if(fork() == 0) {
-			exec(x_argv[0], x_argv);
-		}
-	}
-	
-	wait(0);
-	exit(0);
+            // Check if new_argv[0] is valid before execution
+            if (new_argv[0] == 0) {
+                fprintf(2, "xargs: no command provided\n");
+                exit(1);
+            }
+
+            if (fork() == 0) { // Create a child process to execute the command
+                exec(new_argv[0], new_argv);
+                fprintf(2, "exec %s failed\n", new_argv[0]);
+                exit(1);
+            } else {
+                wait(0); // Wait for the child process to finish
+            }
+            len = 0; // Reset buffer
+        } else {
+            len++;
+            if (len >= MAXLEN) { // Limit input length
+                fprintf(2, "xargs: input line too long\n");
+                exit(1);
+            }
+        }
+    }
+
+    return 0;
 }
