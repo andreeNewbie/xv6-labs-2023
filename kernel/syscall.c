@@ -187,8 +187,35 @@ syscall(void)
     p->trapframe->a0 = syscalls[num]();
     
     if ((p->trace_mask & (1 << num))){
-        printf("%d: syscall %s -> %d\n", p->pid, syscall_names[num], p->trapframe->a0);
+      printf("%d: syscall %s -> %d\n", p->pid, syscall_names[num], p->trapframe->a0);
+      printf("Arguments: ");
+      switch (num) {
+        case SYS_fork:
+        // fork() không có tham số
+        break;
+        case SYS_exit:
+        // exit(status)
+        printf("status=%d\n", p->trapframe->a0);
+        break;
+        case SYS_read:
+        // read(fd, buf, size)
+        printf("fd=%d, buf=0x%x, size=%d\n", p->trapframe->a0,
+        p->trapframe->a1, p->trapframe->a2);
+        break;
+        case SYS_write:
+        // write(fd, buf, size)
+        printf("fd=%d, buf=0x%x, size=%d\n",
+        p->trapframe->a0, p->trapframe->a1, p->trapframe->a2);
+        break;
+        // Thêm các syscall khác tại đây nếu cần
+        default:
+        // Đối với các syscall khác, in ra các tham số mặc định
+        printf("Unknown syscall with arguments: %d %d %d %d\n",
+        p->trapframe->a0, p->trapframe->a1,
+        p->trapframe->a2, p->trapframe->a3);
+        break;
       } 
+    }
   }
   else {
     printf("%d %s: unknown sys call %d\n",
