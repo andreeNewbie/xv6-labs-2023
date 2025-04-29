@@ -1,73 +1,99 @@
 #include "kernel/types.h"
-#include "kernel/stat.h"
-#include "user/user.h"
-#include "kernel/fs.h"
-#include "kernel/fcntl.h"
+ #include "kernel/stat.h"
+ #include "user/user.h"
+ #include "kernel/fs.h"
+ #include "kernel/fcntl.h"
 
-#define MAX_SIZE 512
-
-char * fmtname(char* path)	//"fmt" stands for "format"
+void my_strcat(char *dest, const char *src)
 {
-	char *p;
-	for (p=path+strlen(path); p>=path && *p!='/'; p--)
-		;
-	p++;
+    while (*dest)
+        dest++;
 
-	return p;
+    while (*src)
+        *dest++ = *src++;
+
+    *dest = '\0';
 }
 
-void find(char *path , char *file)
+void joinPaths(char *buff, const char *dirPath, const char *fileName)
 {
-	struct stat st;
-	struct dirent de;
-	int fd;
-	char buf[MAX_SIZE], *p;
+    strcpy(buff, dirPath);
+    // check if the directory path ends with '/', if not then add it
+    if (buff[strlen(buff) - 1] != '/')
+        my_strcat(buff, "/");
 
-	if ((fd=open(path, O_RDONLY)) < 0) {
-		fprintf(2, "find: cannot open %s\n", path);
-		return;
-	}
+    my_strcat(buff, fileName);
+}
 
-	if (fstat(fd, &st) < 0) {
-		fprintf(2, "find: cannot fstat %s\n", path);
-	}
+void find(const char *dirPath, const char *targetFile)
+{
+    char buff[512];
+    int fd; // file descriptor
+    struct dirent de;
+    struct stat st; // status
 
-	switch (st.type) {
-	case T_DEVICE:
-	case T_FILE:
-	      if (strcmp(fmtname(path), fmtname(file)) == 0) fprintf(1, "%s\n", path);
-	      break;
-	case T_DIR:
-	      if (strlen(path) + 1 + DIRSIZ + 1 > sizeof(buf)) {
-		      fprintf(2, "find: path too long\n");
-		      break;
-	      }
-	      strcpy(buf, path);
-	      p = buf + strlen(buf);
-	      *p++ = '/';
-	      while(read(fd, &de, sizeof(de)) == sizeof(de)) {
-	      	if (de.inum == 0) continue;
-		if (strcmp(de.name, ".") && strcmp(de.name, "..")) {
-			memmove(p, de.name, DIRSIZ);
-			p[DIRSIZ] = 0;
-			find(buf, file);
-		}
-	      }
-	      break;
-	}
-	close(fd);
+    // open the directory
+    fd = open(dirPath, 0);
+    if (fd < 0)
+    {
+        fprintf(2, "Can't open %s\n", dirPath);
+        return;
+    }
+
+    // get the status of the directory
+    if (fstat(fd, &st) < 0)
+    {
+        fprintf(2, "Can't stat %s\n", dirPath);
+        close(fd);
+        return;
+    }
+
+    // check if the path is directory or not
+    if (st.type != T_DIR)
+    {
+        fprintf(2, "find: %s is not a directory\n", dirPath);
+        close(fd);
+        return;
+    }
+
+    // reading directory entries
+    while (read(fd, &de, sizeof(de)) == sizeof(de))
+    {
+        // Skip entries that are empty or represent the current and parent directories
+        if (de.inum == 0 || strcmp(de.name, ".") == 0 || strcmp(de.name, "..") == 0)
+            continue;
+
+        // construct the full path of file/directory
+        joinPaths(buff, dirPath, de.name);
+
+        // get the status of the full path
+        if (stat(buff, &st) < 0)
+        {
+            fprintf(2, "find: Can't stat %s\n", buff);
+            continue;
+        }
+
+        // compare entry's name with target file
+        if (strcmp(de.name, targetFile) == 0)
+            printf("%s\n", buff);
+
+        // check if the full path is directory or not
+        if (st.type == T_DIR)
+            find(buff, targetFile);
+    }
+    // close the file descriptor after reading all files/directories
+    close(fd);
 }
 
 int main(int argc, char *argv[])
 {
-	if (argc < 2) {
-		fprintf(2, "Usage: find [PATH] FILE\n");
-		exit(1);
-	}
-	if (argc < 3) find(".", argv[1]);
-	else {
-		for(int i=1; i<argc-1; i++) find(argv[i], argv[argc-1]);
-	}
+    // Check if the correct number of arguments is provided
+    if (argc != 3)
+    {
+        fprintf(2, "Usage: <directory> <filename>\n");
+        exit(1);
+    }
 
-	exit(0);
+    find(argv[1], argv[2]);
+    exit(0);
 }
