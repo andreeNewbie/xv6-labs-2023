@@ -2,18 +2,20 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-void primes(int p[2]) __attribute__((noreturn)); 
+void primes(int p[2]) __attribute__((noreturn)); // Mark as noreturn
 
 void primes(int p[2]) {
     close(p[1]); // Close write end of the pipe in this process
 
     int prime;
-    if (read(p[0], &prime, sizeof(int)) <= 0) {
+    if (read(p[0], &prime, sizeof(int)) <= 0) // n: number of bytes read
+    // read(p[0], &prime, sizeof(int)) <= 0: no more data or error 
+    {
         close(p[0]);
         exit(0); // Exit if no more data
     }
 
-    printf("prime %d\n", prime);
+    printf("prime %d\n", prime); //print 2 first
 
     int num;
     int next_pipe[2];
@@ -59,17 +61,17 @@ void primes(int p[2]) {
     }
     
     exit(0);
-    
 }
 
 int main() {
-    int p[2];
-    if (pipe(p) == -1) {
+    int p[2]; //Pipe [0] = read end, [1] = write end
+    if (pipe(p) == -1) // Create pipe with -1: fail and 0: success
+    {
         fprintf(2, "Failed to create pipe\n");
         exit(1);
     }
 
-    int pid = fork();
+    int pid = fork(); // Fork a new process
     if (pid < 0) {
         fprintf(2, "Failed to fork\n");
         exit(1);
