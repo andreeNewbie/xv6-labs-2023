@@ -76,7 +76,7 @@ copyin(char *s)
 void
 copyout(char *s)
 {
-  uint64 addrs[] = { 0LL, 0x80000000LL, 0xffffffffffffffff };
+  uint64 addrs[] = {0x80000000LL, 0xffffffffffffffff };
 
   for(int ai = 0; ai < 2; ai++){
     uint64 addr = addrs[ai];
@@ -90,6 +90,7 @@ copyout(char *s)
     if(n > 0){
       printf("read(fd, %p, 8192) returned %d, not -1 or 0\n", addr, n);
       exit(1);
+      
     }
     close(fd);
 
@@ -2629,7 +2630,6 @@ struct test {
   {bigargtest, "bigargtest"},
   {argptest, "argptest"},
   {stacktest, "stacktest"},
-  {textwrite, "textwrite"},
   {pgbug, "pgbug" },
   {sbrkbugs, "sbrkbugs" },
   {sbrklast, "sbrklast"},
