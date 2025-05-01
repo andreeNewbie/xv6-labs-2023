@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
     // create 2 pipe (pipe1_parent to child, pipe2_child to parent)
     int pipe1[2], pipe2[2];
 
-    // check if create pipe fail or not
+    // check if create pipe fail or not (-1: fail, 0: success)
     if (pipe(pipe1) == -1 || pipe(pipe2) == -1)
     {
         fprintf(2, "Failed to create 2 pipes!\n");
