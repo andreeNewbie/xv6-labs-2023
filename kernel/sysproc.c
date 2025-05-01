@@ -12,7 +12,6 @@ extern uint64 get_freemem(void); // return number of freemem byte
 extern uint64 get_nproc(void);
 extern uint64 get_loadavg(void);
 
-
 uint64
 sys_exit(void)
 {
@@ -102,13 +101,14 @@ sys_uptime(void)
 }
 
 uint64
-sys_trace(void){
+sys_trace(void)
+{
   int mask;
-  
+
   argint(0, &mask);
   if (mask < 0)
     return -1;
-    
+
   myproc()->trace_mask = mask;
   return 0;
 }
@@ -116,10 +116,9 @@ sys_trace(void){
 uint64 sys_sysinfo(void)
 {
   uint64 addr;
-  struct sysinfo info;
-  struct proc* p = myproc();
-  // get address of struct sysinfo from userspace
-  argaddr(0, &addr);
+  struct sysinfo info;       // kernel ko thể trực tiếp dùng biến này trong user space
+  struct proc *p = myproc(); // trỏ tới struct proc đại diện tiến trình hiện tại
+  argaddr(0, &addr);         // lấy đối số 0 từ syscall, lưu vào addr (ở đây địa chỉ mà người dùng đã truyền vào)
 
   // get system information
   info.freemem = get_freemem();

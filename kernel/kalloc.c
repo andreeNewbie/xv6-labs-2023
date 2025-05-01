@@ -25,8 +25,7 @@ struct
   struct run *freelist;
 } kmem;
 
-void 
-kinit()
+void kinit()
 {
   initlock(&kmem.lock, "kmem");
   freerange(end, (void *)PHYSTOP);
@@ -81,22 +80,20 @@ kalloc(void)
   return (void *)r;
 }
 
-uint64 
+uint64
 get_freemem(void)
 {
   struct run *r;
   uint64 free_mem = 0;
 
   acquire(&kmem.lock);
-  r = kmem.freelist;
+  r = kmem.freelist; // con trỏ đầu danh sách trang trống
   while (r)
   {
-    //free_mem += PGSIZE;
     free_mem++;
     r = r->next;
   }
   release(&kmem.lock);
 
-  return free_mem * 4096;
-  //return free_mem;
+  return free_mem * 4096; // PGSIZE thông thường = 4096
 }
