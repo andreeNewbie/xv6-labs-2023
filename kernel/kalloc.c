@@ -95,5 +95,5 @@ get_freemem(void)
   }
   release(&kmem.lock);
 
-  return free_mem * 4096; // PGSIZE thông thường = 4096
+  return free_mem * PGSIZE;
 }
