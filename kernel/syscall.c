@@ -173,6 +173,112 @@ static char *syscall_names[] = {
 
 // }
 
+void print_arg(struct proc *p, int num)
+{
+  switch (num) {
+    case SYS_fork:
+      // fork() → không có tham số
+      break;
+  
+    case SYS_exit:
+      // exit(status)
+      printf("status = %d\n", p->trapframe->a0);
+      break;
+  
+    case SYS_wait:
+      // wait(addr)
+      printf("addr = 0x%p\n", p->trapframe->a0);
+      break;
+  
+    case SYS_pipe:
+      // pipe(p)
+      printf("pipefd addr = 0x%p\n", p->trapframe->a0);
+      break;
+  
+    case SYS_read:
+      // read(fd, buf, n)
+      printf("fd = %d, buf = 0x%x, size = %d\n", 
+        p->trapframe->a0, p->trapframe->a1, p->trapframe->a2);
+      break;
+  
+    case SYS_write:
+      // write(fd, buf, n)
+      printf("fd = %d, buf = 0x%x, size = %d\n", 
+        p->trapframe->a0, p->trapframe->a1, p->trapframe->a2);
+      break;
+  
+    case SYS_close:
+      // close(fd)
+      printf("fd = %d\n", p->trapframe->a0);
+      break;
+  
+    case SYS_dup:
+      // dup(fd)
+      printf("fd = %d\n", p->trapframe->a0);
+      break;
+  
+    case SYS_kill:
+      // kill(pid)
+      printf("pid = %d\n", p->trapframe->a0);
+      break;
+  
+    case SYS_exec:
+      // exec(path, argv)
+      printf("path = 0x%p, argv = 0x%p\n", p->trapframe->a0, p->trapframe->a1);
+      break;
+  
+    case SYS_open:
+      // open(path, mode)
+      printf("path = 0x%p, mode = %d\n", p->trapframe->a0, p->trapframe->a1);
+      break;
+  
+    case SYS_mkdir:
+      // mkdir(path)
+      printf("path = 0x%p\n", p->trapframe->a0);
+      break;
+  
+    case SYS_chdir:
+      // chdir(path)
+      printf("path = 0x%p\n", p->trapframe->a0);
+      break;
+  
+    case SYS_unlink:
+      // unlink(path)
+      printf("path = 0x%p\n", p->trapframe->a0);
+      break;
+  
+    case SYS_link:
+      // link(old, new)
+      printf("old = 0x%p, new = 0x%p\n", p->trapframe->a0, p->trapframe->a1);
+      break;
+  
+    case SYS_getpid:
+      // getpid()
+      break;
+  
+    case SYS_sbrk:
+      // sbrk(n)
+      printf("n = %d\n", p->trapframe->a0);
+      break;
+  
+    case SYS_sleep:
+      // sleep(n)
+      printf("n = %d\n", p->trapframe->a0);
+      break;
+  
+    case SYS_uptime:
+      // uptime()
+      break;
+  
+    default:
+      // fallback in 4 tham số đầu
+      printf("args = %d %d %d %d\n", 
+        p->trapframe->a0, p->trapframe->a1, 
+        p->trapframe->a2, p->trapframe->a3);
+      break;
+  }  
+}
+
 void
 syscall(void)
 {
@@ -188,33 +294,7 @@ syscall(void)
     
     if ((p->trace_mask & (1 << num))){
       printf("%d: syscall %s -> %d\n", p->pid, syscall_names[num], p->trapframe->a0);
-      printf("Arguments: ");
-      switch (num) {
-        case SYS_fork:
-        // fork() không có tham số
-        break;
-        case SYS_exit:
-        // exit(status)
-        printf("status=%d\n", p->trapframe->a0);
-        break;
-        case SYS_read:
-        // read(fd, buf, size)
-        printf("fd=%d, buf=0x%x, size=%d\n", p->trapframe->a0,
-        p->trapframe->a1, p->trapframe->a2);
-        break;
-        case SYS_write:
-        // write(fd, buf, size)
-        printf("fd=%d, buf=0x%x, size=%d\n",
-        p->trapframe->a0, p->trapframe->a1, p->trapframe->a2);
-        break;
-        // Thêm các syscall khác tại đây nếu cần
-        default:
-        // Đối với các syscall khác, in ra các tham số mặc định
-        printf("Unknown syscall with arguments: %d %d %d %d\n",
-        p->trapframe->a0, p->trapframe->a1,
-        p->trapframe->a2, p->trapframe->a3);
-        break;
-      } 
+      print_arg(p, num);
     }
   }
   else {
