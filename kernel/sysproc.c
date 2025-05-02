@@ -99,7 +99,7 @@ sys_pgaccess(void)
 
     if (pte == 0 || !(*pte & PTE_V) || !(*pte & PTE_U))
       continue; // Skip invalid or non-userspace pages
-    if (*pte & PTE_A)
+    if (*pte & PTE_A) 10000
     {
       bitmask |= (1 << i); // Set the corresponding bit if the page has been visited
       *pte &= ~PTE_A;      // Clear access bit
